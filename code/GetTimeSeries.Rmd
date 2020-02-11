@@ -1,0 +1,101 @@
+---
+title: "Solr time series data"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#### Terminal:
+
+sudo service solr start
+
+*If desired:*
+sudo service solr status
+
+*To see in Browser:*
+http://localhost:8983/solr/
+
+#### Load packages
+
+```{r}
+library(solrium)
+library(readr)
+
+```
+
+#### First step
+
+```{r}
+cli <- SolrClient$new()
+cli
+
+```
+
+#### Get time series data to upload to Solr
+
+*manual example:*
+
+https://docs.opendata.aws/noaa-ghcn-pds/readme.html
+
+
+```{r}
+
+X1788 <- read_csv("http://noaa-ghcn-pds.s3.amazonaws.com/csv/1788.csv", 
+                  col_names = FALSE)
+
+head(X1788)
+
+```
+
+#### Get station data (saved)
+
+```{r}
+read_table("http://noaa-ghcn-pds.s3.amazonaws.com/ghcnd-stations.txt", 
+           col_names = FALSE,
+           n_max = 10)
+
+```
+
+
+```{r}
+# # Fixed Width, but not needed apparently:
+# read_fwf("http://noaa-ghcn-pds.s3.amazonaws.com/ghcnd-stations.txt")
+
+if(!file.exists("../data/stations.csv")) {
+stations <- read_table("http://noaa-ghcn-pds.s3.amazonaws.com/ghcnd-stations.txt", 
+                       col_names = FALSE)
+write_csv(stations, "../data/stations.csv")
+} else {
+stations <- read_csv("../data/stations.csv")
+}
+
+```
+
+
+#### Now get 10 years of data
+
+```{r}
+
+years <- 2009:2018
+
+year_dat <- list()
+
+for(i in 1:length(years)){
+year <- paste0("http://noaa-ghcn-pds.s3.amazonaws.com/csv/", years[i], ".csv")
+dat <- read_csv(year, col_names = FALSE)
+year_dat[[i]] <- dat
+}
+
+names(year_dat) <- paste0("y", years)
+
+```
+
+
+
+
+
+
+
