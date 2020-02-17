@@ -77,9 +77,10 @@ stations <- read_csv("../data/stations.csv")
 
 #### Now get 10 years of data
 
-```{r}
+*works, but tried with more recent data and (too) slow*
+```{r message=FALSE}
 
-years <- 2009:2018
+years <- 1788:1797
 
 year_dat <- list()
 
@@ -93,9 +94,30 @@ names(year_dat) <- paste0("y", years)
 
 ```
 
+*try the compressed data, as in:*
+http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1788.csv.gz
+
+*followed data.table suggestion here, but dont need to have curl installed (just rtools which fread in data.table needs)*
+  + rtools can be installed using install.packages('rtools') apparently
+  
+https://stackoverflow.com/questions/3053833/using-r-to-download-zipped-data-file-extract-and-import-data
 
 
+```{r}
+library(data.table)
+dt <- fread("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1788.csv.gz")
 
+```
 
+*but hangs and aborts with larger, more recent, so could simply download first*
+
+some issue here, tempfile works for csv 
+```{r}
+tfile <- tempfile()
+download.file("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1788.csv.gz", tfile)
+dt <- fread(tfile)
+rm(tfile)
+
+```
 
 
