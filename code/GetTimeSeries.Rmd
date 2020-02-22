@@ -10,9 +10,14 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #### Terminal:
 
+*ctrl alt enter works here*
+
 sudo service solr start
 
-*If desired:*
+*didn't do anything*
+sudo service solr start -e cloud
+
+*If desired, enter "q" to exit:*
 sudo service solr status
 
 *To see in Browser:*
@@ -111,13 +116,86 @@ dt <- fread("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1788.csv.gz")
 
 *but hangs and aborts with larger, more recent, so could simply download first*
 
-some issue here, tempfile works for csv 
 ```{r}
-tfile <- tempfile()
-download.file("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1788.csv.gz", tfile)
-dt <- fread(tfile)
-rm(tfile)
+
+# tdir <- tempdir()
+# download.file("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1788.csv.gz", 
+#               mode = "wb", tfile)
+
+download.file("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1988.csv.gz", 
+              destfile = paste0(tdir, "/1988.csv.gz"), 
+              method = "wget", 
+              quiet = TRUE)
+
+# works as a test
+# readLines(paste0(tdir, "/1988.csv.gz"), 1)
+
+# crashes
+# length(readLines(paste0(tdir, "/1988.csv.gz")))
+
+
+file <- file(paste0("/tmp/RtmpsA5fjQ", "/1988.csv.gz"), "r")
+readsizeof <- 100000
+nooflines <- 0
+( while((linesread <- length(readLines(file, readsizeof))) > 0 )
+nooflines <- nooflines+linesread )
+close(file)
+nooflines
 
 ```
 
+#### Looks like need to unzip
+
+*but best solution is to unzip then load directly into solr?*
+
+```{r}
+
+# quick, but 1988 is not!
+fread(paste0("/tmp/RtmpsA5fjQ", "/1788.csv.gz"), nrows = 1)
+
+# quick, but not dataframe
+chunk <- readLines(file, n = 10)
+chunk
+
+
+
+```
+
+sudo su - solr -c "/opt/solr/bin/solr create -c y1788 -n data_driven_schema_configs"
+
+```{r}
+
+# # needs to be in cloud mode apparently
+# if (!cli$collection_exists("y1788")) {
+#   cli$collection_create(name = "y1788")
+# }
+
+library(R.utils)
+gunzip(paste0("/tmp/RtmpsA5fjQ", "/1788.csv.gz"), remove = FALSE)
+
+cli$update_csv(files = paste0("/tmp/RtmpsA5fjQ", "/1788.csv"), 
+               name = "y1788",
+               separator = ",", 
+               header = FALSE,
+               fieldnames = c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8"))
+
+tmp <- cli$search(name = "y1788", list(q = "*:*"))
+
+tmp <- solr_search(cli, "y1788")
+
+```
+
+
+
+```{r}
+
+# df <- data.frame(id=1:3, name=c('red', 'blue', 'green'))
+# write.csv(df, file="df.csv", row.names=FALSE, quote = FALSE)
+# cli$update_csv("df.csv", "y1788", verbose = TRUE)
+
+# # needs to be in cloud mode also
+collection_delete(cli, "y1788")
+
+
+```
 
