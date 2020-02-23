@@ -27,7 +27,7 @@ http://localhost:8983/solr/
 
 ```{r}
 library(solrium)
-library(readr)
+# library(readr)
 
 ```
 
@@ -122,10 +122,15 @@ dt <- fread("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1788.csv.gz")
 # download.file("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1788.csv.gz", 
 #               mode = "wb", tfile)
 
-download.file("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1988.csv.gz", 
-              destfile = paste0(tdir, "/1988.csv.gz"), 
+# dir.create("~/Data")
+saved_dir <- "~/Data"
+
+if(!file.exists(paste0(saved_dir, "/2010.csv.gz"))) {
+download.file("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/2010.csv.gz", 
+              destfile = paste0(saved_dir, "/2010.csv.gz"), 
               method = "wget", 
               quiet = TRUE)
+}
 
 # works as a test
 # readLines(paste0(tdir, "/1988.csv.gz"), 1)
@@ -134,8 +139,8 @@ download.file("http://noaa-ghcn-pds.s3.amazonaws.com/csv.gz/1988.csv.gz",
 # length(readLines(paste0(tdir, "/1988.csv.gz")))
 
 
-file <- file(paste0("/tmp/RtmpsA5fjQ", "/1988.csv.gz"), "r")
-readsizeof <- 100000
+file <- file(paste0(saved_dir, "/2010.csv.gz"), "r")
+readsizeof <- 200000
 nooflines <- 0
 ( while((linesread <- length(readLines(file, readsizeof))) > 0 )
 nooflines <- nooflines+linesread )
@@ -154,14 +159,12 @@ nooflines
 fread(paste0("/tmp/RtmpsA5fjQ", "/1788.csv.gz"), nrows = 1)
 
 # quick, but not dataframe
-chunk <- readLines(file, n = 10)
+chunk <- readLines(paste0(saved_dir, "/2010.csv.gz"), n = 1)
 chunk
-
-
 
 ```
 
-sudo su - solr -c "/opt/solr/bin/solr create -c y1788 -n data_driven_schema_configs"
+sudo su - solr -c "/opt/solr/bin/solr create -c y2010 -n data_driven_schema_configs"
 
 ```{r}
 
@@ -170,19 +173,34 @@ sudo su - solr -c "/opt/solr/bin/solr create -c y1788 -n data_driven_schema_conf
 #   cli$collection_create(name = "y1788")
 # }
 
+# try just one line with right types
+df <- data.frame(stringsAsFactors = FALSE, 
+                 V1 = "Z", V2 = as.integer(0), V3 = "Z", V4 = as.integer(0), 
+                 V5 = "Z", V6 = "Z", V7 = "Z", V8 = "Z")
+
+# # worked
+# cli$add(df, "y2010")
+
+
 library(R.utils)
-gunzip(paste0("/tmp/RtmpsA5fjQ", "/1788.csv.gz"), remove = FALSE)
+# gunzip(paste0(saved_dir, "/2010.csv.gz"), remove = FALSE)
 
-cli$update_csv(files = paste0("/tmp/RtmpsA5fjQ", "/1788.csv"), 
-               name = "y1788",
-               separator = ",", 
-               header = FALSE,
-               fieldnames = c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8"))
+```
 
-tmp <- cli$search(name = "y1788", list(q = "*:*"))
+#### Next try uploading chunks and add to collection (not the whole thing for now)
+```{r}
 
-tmp <- solr_search(cli, "y1788")
+# cli$update_csv(files = paste0(saved_dir, "/2010.csv.gz"), 
+#                name = "y2010",
+#                separator = ",", 
+#                header = FALSE,
+#                fieldnames = c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8"))
 
+tmp <- cli$search(name = "y2010", list(q = "*:*"))
+
+tmp <- solr_search(cli, "y2010")
+
+tmp
 ```
 
 
@@ -194,7 +212,7 @@ tmp <- solr_search(cli, "y1788")
 # cli$update_csv("df.csv", "y1788", verbose = TRUE)
 
 # # needs to be in cloud mode also
-collection_delete(cli, "y1788")
+collection_delete(cli, "y2010")
 
 
 ```
