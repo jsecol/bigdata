@@ -155,14 +155,35 @@ nooflines
 
 ```{r}
 
-# quick, but 1988 is not!
-fread(paste0("/tmp/RtmpsA5fjQ", "/1788.csv.gz"), nrows = 1)
+# 1788.csv.gz quick, but 1988 is not!
+fread(paste0(saved_dir, "/1788.csv.gz"), nrows = 1)
 
 # quick, but not dataframe
 chunk <- readLines(paste0(saved_dir, "/2010.csv.gz"), n = 1)
 chunk
 
 ```
+
+#### Read in large file in chunks
+
+*try this in loop with adding to solr in chunks, check speed*
+
+```{r}
+
+library(R.utils)
+# gunzip(paste0(saved_dir, "/2010.csv.gz"), remove = FALSE)
+
+# test
+chunk1 <- fread(paste0(saved_dir, "/2010.csv"), nrows = 1000000, skip = 0)
+chunk2 <- fread(paste0(saved_dir, "/2010.csv"), nrows = 1000000, skip = 1000000)
+
+
+
+```
+
+
+
+
 
 sudo su - solr -c "/opt/solr/bin/solr create -c y2010 -n data_driven_schema_configs"
 
@@ -181,9 +202,6 @@ df <- data.frame(stringsAsFactors = FALSE,
 # # worked
 # cli$add(df, "y2010")
 
-
-library(R.utils)
-# gunzip(paste0(saved_dir, "/2010.csv.gz"), remove = FALSE)
 
 ```
 
