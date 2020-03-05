@@ -17,6 +17,30 @@ sudo service solr start
 *didn't do anything*
 sudo service solr start -e cloud
 
+****try this
+cd solr-8.4.1/
+./bin/solr start -e cloud
+**accept defaults (but I used techprod_me)
+*dont run, but tested to post all examples*
+bin/post -c techproducts example/exampledocs/*
+
+*example query in solr for my existing collection*
+http://localhost:8983/solr/techprods_me/select?q=*%3A*&rows=10&start=0&wt=csv
+
+#### base R way
+```{r}
+library(curl)
+
+url1 <- "http://localhost:8983/solr/techprods_me/select?q=*%3A*&rows=6&start=0&wt=csv"
+
+cl_con <- curl(url1)
+
+tmp_df <- read.csv(cl_con, stringsAsFactors = FALSE)
+tmp_df
+```
+
+
+
 *If desired, enter "q" to exit:*
 sudo service solr status
 
@@ -27,7 +51,8 @@ http://localhost:8983/solr/
 
 ```{r}
 library(solrium)
-# library(readr)
+library(readr)
+library(data.table)
 
 ```
 
@@ -190,9 +215,9 @@ sudo su - solr -c "/opt/solr/bin/solr create -c y2010 -n data_driven_schema_conf
 ```{r}
 
 # # needs to be in cloud mode apparently
-# if (!cli$collection_exists("y1788")) {
-#   cli$collection_create(name = "y1788")
-# }
+if (!cli$collection_exists("y2010")) {
+  cli$collection_create(name = "y2010")
+}
 
 # try just one line with right types
 df <- data.frame(stringsAsFactors = FALSE, 
@@ -200,10 +225,30 @@ df <- data.frame(stringsAsFactors = FALSE,
                  V5 = "Z", V6 = "Z", V7 = "Z", V8 = "Z")
 
 # # worked
-# cli$add(df, "y2010")
+cli$add(df, "y2010")
 
 
 ```
+
+
+
+```{r}
+stime <- Sys.time()
+
+cli$add(chunk1, "y2010")
+
+Sys.time() - stime
+```
+
+```{r}
+stime <- Sys.time()
+
+cli$add(chunk1, "techprods_me")
+
+Sys.time() - stime
+```
+
+
 
 #### Next try uploading chunks and add to collection (not the whole thing for now)
 ```{r}
@@ -214,11 +259,15 @@ df <- data.frame(stringsAsFactors = FALSE,
 #                header = FALSE,
 #                fieldnames = c("V1", "V2", "V3", "V4", "V5", "V6", "V7", "V8"))
 
-tmp <- cli$search(name = "y2010", list(q = "*:*"))
+cli$ping("techprods_me")
 
-tmp <- solr_search(cli, "y2010")
+tmp <- cli$search(name = "techproducts", list(q = "*:*"))
 
-tmp
+tmp <- solr_search(cli, "y2010", params = list(q='*:*', rows = 20000))
+
+tmp <- solr_search(cli, "y2010", params = list(q='V3:TMAX', rows = 200))
+
+# tmp
 ```
 
 
@@ -230,7 +279,7 @@ tmp
 # cli$update_csv("df.csv", "y1788", verbose = TRUE)
 
 # # needs to be in cloud mode also
-collection_delete(cli, "y2010")
+collection_delete(cli, "2010")
 
 
 ```
